@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Škoda Octavia A8 (Mk4) — WIP Parts Selection & Estimator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        skoda: {
+                            dark: '#0E3A2F',      /* Škoda Emerald Dark */
+                            emerald: '#006E4F',   /* Primary Brand Green */
+                            electric: '#78FAAE',  /* Škoda Electric Green Accent */
+                            slate: '#1E293B',
+                            surface: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar for smooth workshop experience */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Interactive SVG Zone Styling */
+        .car-zone {
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .car-zone:hover {
+            filter: brightness(1.15);
+            stroke: #78FAAE;
+            stroke-width: 2.5px;
+        }
+        .car-zone.active-zone {
+            fill: rgba(120, 250, 174, 0.35) !important;
+            stroke: #78FAAE !important;
+            stroke-width: 2.5px !important;
+        }
+        .car-zone.has-selected {
+            fill: rgba(245, 158, 11, 0.35);
+            stroke: #F59E0B;
+            stroke-width: 2px;
+        }
+
+        /* Print Styles for clean Workshop Job Sheet */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-full-width {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .card-shadow {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Toast Notification Banner (Replaces alert) -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Custom Confirmation Modal (Replaces confirm) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center gap-3 text-amber-600 mb-3">
+                <div class="p-2 bg-amber-100 rounded-xl">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900" id="modal-title">Confirm Action</h3>
+            </div>
+            <p class="text-sm text-slate-600 mb-6" id="modal-message">Are you sure you want to proceed?</p>
+            <div class="flex justify-end gap-3">
+                <button id="modal-cancel" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                <button id="modal-confirm" class="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition shadow-sm">Yes, Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Branded Header -->
+    <header class="bg-skoda-dark text-white shadow-lg border-b border-emerald-900/60 sticky top-0 z-30 no-print">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-skoda-emerald border border-skoda-electric/40 flex items-center justify-center shadow-inner">
+                    <i data-lucide="car" class="w-6 h-6 text-skoda-electric"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white">ŠKODA OCTAVIA A8 <span class="text-skoda-electric font-semibold">(Mk4)</span></h1>
+                        <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-skoda-electric/15 text-skoda-electric border border-skoda-electric/30">
+                            WIP & Parts Estimator
+                        </span>
+                    </div>
+                    <p class="text-xs text-emerald-200/80">Service Center • Body & Paint Collision Damage Assessment</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <span id="autosave-indicator" class="hidden md:inline-flex items-center gap-1.5 text-xs text-emerald-300/90 bg-emerald-950/60 px-3 py-1.5 rounded-lg border border-emerald-800/50">
+                    <span class="w-2 h-2 rounded-full bg-skoda-electric animate-pulse"></span>
+                    Auto-saved
+                </span>
+                <button onclick="exportToCSV()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-skoda-electric text-skoda-dark hover:bg-emerald-300 transition shadow-sm cursor-pointer">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                    <span>Export Excel (.CSV)</span>
+                </button>
+                <button onclick="window.print()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white/10 text-white hover:bg-white/20 border border-white/15 transition cursor-pointer">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Print Job Sheet</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Print-Only Header -->
+    <div class="hidden print-only border-b-2 border-slate-800 pb-4 mb-6 px-6 pt-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">ŠKODA OCTAVIA A8 (Mk4) — WORKSHOP PARTS REQUISITION</h1>
+                <p class="text-sm text-slate-600">Body, Paint & Mechanical Damage Assessment Sheet</p>
+            </div>
+            <div class="text-right text-xs text-slate-500">
+                <p>Generated: <span id="print-timestamp"></span></p>
+            </div>
+        </div>
+        <div class="grid grid-cols-5 gap-4 mt-4 pt-3 border-t border-slate-300 text-sm">
+            <div><span class="font-semibold text-slate-500 block text-xs">WIP / JOB CARD:</span> <span id="print-wip" class="font-bold">-</span></div>
+            <div><span class="font-semibold text-slate-500 block text-xs">VIN / CHASSIS:</span> <span id="print-vin" class="font-mono font-bold">-</span></div>
+            <div><span class="font-semibold text-slate-500 block text-xs">PLATE NO.:</span> <span id="print-plate" class="font-bold">-</span></div>
+            <div><span class="font-semibold text-slate-500 block text-xs">ADVISOR / ESTIMATOR:</span> <span id="print-advisor" class="font-bold">-</span></div>
+            <div><span class="font-semibold text-slate-500 block text-xs">ASSESSMENT DATE:</span> <span id="print-date" class="font-bold">-</span></div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-5 space-y-5 print-full-width">
+
+        <!-- WIP / Job Card Metadata Bar -->
+        <section class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 no-print">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <i data-lucide="clipboard-list" class="w-4 h-4 text-skoda-emerald"></i>
+                    Vehicle & WIP Job Card Details
+                </h2>
+                <button onclick="confirmClearAll()" class="text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1 rounded-lg transition inline-flex items-center gap-1 cursor-pointer">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    Reset Checklist
+                </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">WIP / Job Card No. *</label>
+                    <input type="text" id="meta-wip" placeholder="e.g., WIP-2026-8841" oninput="saveState()"
+                        class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-skoda-emerald focus:bg-white font-semibold text-slate-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">VIN / Chassis Number</label>
+                    <input type="text" id="meta-vin" placeholder="TMBJJ7NX..." maxlength="17" oninput="this.value = this.value.toUpperCase(); saveState()"
+                        class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-skoda-emerald focus:bg-white font-mono uppercase text-slate-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Plate Number</label>
+                    <input type="text" id="meta-plate" placeholder="e.g., ABC 1234" oninput="this.value = this.value.toUpperCase(); saveState()"
+                        class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-skoda-emerald focus:bg-white font-semibold uppercase text-slate-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Service Advisor / Estimator</label>
+                    <input type="text" id="meta-advisor" placeholder="Advisor Name" oninput="saveState()"
+                        class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-skoda-emerald focus:bg-white text-slate-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Assessment Date</label>
+                    <input type="date" id="meta-date" oninput="saveState()"
+                        class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-skoda-emerald focus:bg-white text-slate-900">
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace Grid: Left/Center Interactive Schematic & Checklist + Right Sticky Summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- Left 8 Columns: Visual Vehicle Selector + Parts Checklist -->
+            <div class="lg:col-span-8 space-y-5 no-print">
+
+                <!-- Interactive Škoda Octavia A8 Top-Down / Exploded Schematic Card -->
+                <div class="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-skoda-electric"></span>
+                                Interactive Octavia A8 Zone Map
+                            </h2>
+                            <p class="text-xs text-slate-400">Click any vehicle section to filter parts • Amber zones contain selected items</p>
+                        </div>
+                        <button onclick="selectCategory('all')" id="btn-show-all-zones"
+                            class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-skoda-emerald text-white hover:bg-emerald-600 transition cursor-pointer">
+                            Show All Categories
+                        </button>
+                    </div>
+
+                    <!-- Custom Interactive SVG Schematic of Škoda Octavia A8 Liftback -->
+                    <div class="relative w-full bg-slate-950/70 rounded-xl border border-slate-800 p-3 flex flex-col items-center justify-center overflow-hidden">
+                        <svg viewBox="0 0 820 310" class="w-full max-w-3xl h-auto select-none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Grid Background Lines -->
+                            <defs>
+                                <pattern id="techGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(148, 163, 184, 0.08)" stroke-width="1"/>
+                                </pattern>
+                            </defs>
+                            <rect width="820" height="310" fill="url(#techGrid)" rx="8" />
+
+                            <!-- Labels for Orientation -->
+                            <text x="24" y="160" fill="#64748B" font-size="11" font-weight="700" transform="rotate(-90 24,160)" text-anchor="middle" letter-spacing="2">FRONT</text>
+                            <text x="796" y="160" fill="#64748B" font-size="11" font-weight="700" transform="rotate(90 796,160)" text-anchor="middle" letter-spacing="2">REAR</text>
+                            <text x="410" y="22" fill="#64748B" font-size="10" font-weight="600" text-anchor="middle" letter-spacing="1.5">LEFT SIDE (DRIVER LHD)</text>
+                            <text x="410" y="298" fill="#64748B" font-size="10" font-weight="600" text-anchor="middle" letter-spacing="1.5">RIGHT SIDE (PASSENGER LHD)</text>
+
+                            <!-- 1. FRONT END & BUMPER ZONE -->
+                            <g id="zone-front" class="car-zone" onclick="selectCategory('front')" fill="rgba(30, 41, 59, 0.85)" stroke="#475569" stroke-width="1.5">
+                                <path d="M 65 95 C 48 115, 48 195, 65 215 L 125 225 L 125 85 Z" />
+                                <!-- Signature Skoda Grille Outline -->
+                                <path d="M 55 130 L 68 125 L 68 185 L 55 180 Z" fill="rgba(120, 250, 174, 0.15)" stroke="#78FAAE" stroke-width="1"/>
+                                <text x="92" y="158" fill="#E2E8F0" font-size="10" font-weight="700" text-anchor="middle" stroke="none">1. FRONT</text>
+                            </g>
+
+                            <!-- 2. LIGHTING & ADAS SENSORS (Headlights, Radar, Taillights) -->
+                            <g id="zone-lighting" class="car-zone" onclick="selectCategory('lighting')" fill="rgba(14, 116, 144, 0.35)" stroke="#38BDF8" stroke-width="1.5">
+                                <!-- Left Headlight -->
+                                <path d="M 68 86 L 112 80 L 115 96 L 72 102 Z" />
+                                <!-- Right Headlight -->
+                                <path d="M 68 224 L 112 230 L 115 214 L 72 208 Z" />
+                                <!-- Front Radar Emblem -->
+                                <circle cx="58" cy="155" r="7" />
+                                <!-- Left Taillight -->
+                                <path d="M 710 86 L 752 96 L 746 112 L 705 102 Z" />
+                                <!-- Right Taillight -->
+                                <path d="M 710 224 L 752 214 L 746 198 L 705 208 Z" />
+                            </g>
+
+                            <!-- 3. ENGINE BAY & COOLING ZONE -->
+                            <g id="zone-engine" class="car-zone" onclick="selectCategory('engine')" fill="rgba(30, 41, 59, 0.9)" stroke="#475569" stroke-width="1.5">
+                                <rect x="130" y="92" width="115" height="126" rx="10" />
+                                <!-- Engine Block Detail -->
+                                <rect x="150" y="115" width="75" height="80" rx="6" fill="rgba(15, 23, 42, 0.8)" stroke="#64748B" stroke-width="1"/>
+                                <text x="187" y="152" fill="#E2E8F0" font-size="10" font-weight="700" text-anchor="middle" stroke="none">3. ENGINE</text>
+                                <text x="187" y="165" fill="#94A3B8" font-size="8.5" text-anchor="middle" stroke="none">& COOLING</text>
+                            </g>
+
+                            <!-- 4. BODY PANELS, DOORS & GLASS (Left & Right Sides + Roof/Windshield) -->
+                            <g id="zone-body" class="car-zone" onclick="selectCategory('body')" fill="rgba(30, 41, 59, 0.85)" stroke="#475569" stroke-width="1.5">
+                                <!-- Left Doors & Fenders -->
+                                <path d="M 125 65 L 250 62 L 250 86 L 125 86 Z" />
+                                <path d="M 254 62 L 425 62 L 425 86 L 254 86 Z" />
+                                <path d="M 429 62 L 595 66 L 595 88 L 429 88 Z" />
+                                <!-- Right Doors & Fenders -->
+                                <path d="M 125 224 L 250 224 L 250 248 L 125 245 Z" />
+                                <path d="M 254 224 L 425 224 L 425 248 L 254 248 Z" />
+                                <path d="M 429 222 L 595 222 L 595 244 L 429 248 Z" />
+                                <!-- Windshield & Roof Glass -->
+                                <path d="M 252 92 L 320 96 L 320 214 L 252 218 Z" fill="rgba(56, 189, 248, 0.15)" />
+                                <path d="M 520 96 L 615 102 L 615 208 L 520 214 Z" fill="rgba(56, 189, 248, 0.15)" />
+                                <!-- Side Mirrors -->
+                                <path d="M 265 60 L 285 42 L 298 46 L 285 60 Z" />
+                                <path d="M 265 250 L 285 268 L 298 264 L 285 250 Z" />
+                                <text x="285" y="158" fill="#E2E8F0" font-size="9.5" font-weight="700" text-anchor="middle" stroke="none">GLASS / ROOF</text>
+                            </g>
+
+                            <!-- 8. INTERIOR & SAFETY / AIRBAGS (Cabin Center) -->
+                            <g id="zone-interior" class="car-zone" onclick="selectCategory('interior')" fill="rgba(51, 65, 85, 0.85)" stroke="#64748B" stroke-width="1.5">
+                                <rect x="325" y="96" width="190" height="118" rx="8" />
+                                <text x="420" y="152" fill="#E2E8F0" font-size="10" font-weight="700" text-anchor="middle" stroke="none">8. INTERIOR</text>
+                                <text x="420" y="165" fill="#94A3B8" font-size="8.5" text-anchor="middle" stroke="none">& AIRBAGS</text>
+                            </g>
+
+                            <!-- 5. REAR END & TRUNK -->
+                            <g id="zone-rear" class="car-zone" onclick="selectCategory('rear')" fill="rgba(30, 41, 59, 0.85)" stroke="#475569" stroke-width="1.5">
+                                <path d="M 620 92 L 748 96 C 765 115, 765 195, 748 214 L 620 218 Z" />
+                                <text x="682" y="152" fill="#E2E8F0" font-size="10" font-weight="700" text-anchor="middle" stroke="none">5. REAR</text>
+                                <text x="682" y="165" fill="#94A3B8" font-size="8.5" text-anchor="middle" stroke="none">& TRUNK</text>
+                            </g>
+
+                            <!-- 6. SUSPENSION, STEERING & BRAKES (4 Wheel Wells) -->
+                            <g id="zone-suspension" class="car-zone" onclick="selectCategory('suspension')" fill="rgba(16, 185, 129, 0.25)" stroke="#10B981" stroke-width="1.5">
+                                <!-- Front Left Wheel -->
+                                <rect x="145" y="42" width="66" height="18" rx="5" />
+                                <!-- Front Right Wheel -->
+                                <rect x="145" y="250" width="66" height="18" rx="5" />
+                                <!-- Rear Left Wheel -->
+                                <rect x="605" y="44" width="66" height="18" rx="5" />
+                                <!-- Rear Right Wheel -->
+                                <rect x="605" y="248" width="66" height="18" rx="5" />
+                            </g>
+
+                            <!-- 7. EXHAUST & UNDERCARRIAGE (Bottom Pill Button inside SVG) -->
+                            <g id="zone-exhaust" class="car-zone" onclick="selectCategory('exhaust')" fill="rgba(30, 41, 59, 0.9)" stroke="#64748B" stroke-width="1.5">
+                                <rect x="520" y="266" width="190" height="22" rx="11" />
+                                <text x="615" y="280" fill="#CBD5E1" font-size="9" font-weight="700" text-anchor="middle" stroke="none">7. EXHAUST & UNDERBODY</text>
+                            </g>
+
+                            <!-- Legend Pills inside SVG top -->
+                            <g transform="translate(85, 10)">
+                                <circle cx="0" cy="6" r="4" fill="#38BDF8" />
+                                <text x="9" y="9" fill="#94A3B8" font-size="9">2. Lighting/ADAS</text>
+                                <circle cx="105" cy="6" r="4" fill="#10B981" />
+                                <text x="114" y="9" fill="#94A3B8" font-size="9">6. Wheels/Suspension</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Category Quick-Filter Pills -->
+                    <div id="category-tabs" class="flex flex-wrap gap-1.5 mt-3.5">
+                        <!-- Rendered dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Search & Filter Toolbar -->
+                <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+                    <div class="relative flex-1 min-w-[220px]">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="search-input" placeholder="Search Octavia A8 parts (e.g., Matrix Headlight, Radar, Fender, Airbag)..."
+                            oninput="handleSearch(this.value)"
+                            class="w-full pl-10 pr-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-skoda-emerald focus:bg-white">
+                        <button id="clear-search-btn" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer select-none text-xs font-semibold text-slate-700">
+                            <input type="checkbox" id="toggle-selected-only" onchange="renderPartsList()" class="rounded text-skoda-emerald focus:ring-skoda-emerald w-4 h-4">
+                            <span>Selected Only</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Categorized Parts Checklist Container -->
+                <div id="parts-container" class="space-y-4">
+                    <!-- Sections and Part Rows rendered dynamically via JS -->
+                </div>
+
+            </div>
+
+            <!-- Right 4 Columns: Sticky Live WIP Summary & Parts Requisition Sheet -->
+            <aside class="lg:col-span-4 lg:sticky lg:top-20 space-y-4 print-full-width">
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200/90 overflow-hidden card-shadow">
+                    <!-- Summary Header -->
+                    <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between no-print">
+                        <div>
+                            <h2 class="text-base font-bold flex items-center gap-2">
+                                <i data-lucide="check-square" class="w-4 h-4 text-skoda-electric"></i>
+                                Selected WIP Parts List
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Ready for Excel export or DMS entry</p>
+                        </div>
+                        <div class="text-right">
+                            <span id="summary-total-badge" class="inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-extrabold bg-skoda-electric text-skoda-dark">
+                                0 Items
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Action Breakdown Counters -->
+                    <div class="grid grid-cols-4 divide-x divide-slate-200 border-b border-slate-200 bg-slate-50 text-center py-2.5">
+                        <div>
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-red-600">Replace</span>
+                            <span id="count-replace" class="text-base font-extrabold text-slate-900">0</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-amber-600">Repair</span>
+                            <span id="count-repair" class="text-base font-extrabold text-slate-900">0</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-blue-600">Paint</span>
+                            <span id="count-paint" class="text-base font-extrabold text-slate-900">0</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-600">R&I</span>
+                            <span id="count-ri" class="text-base font-extrabold text-slate-900">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Selected Items List -->
+                    <div id="selected-summary-list" class="p-4 max-h-[520px] overflow-y-auto divide-y divide-slate-100 print:max-h-none print:overflow-visible">
+                        <!-- Empty State -->
+                        <div class="py-10 text-center text-slate-400">
+                            <i data-lucide="wrench" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+                            <p class="text-sm font-medium text-slate-500">No parts selected yet</p>
+                            <p class="text-xs mt-1">Check items on the left or click a car zone to begin estimating.</p>
+                        </div>
+                    </div>
+
+                    <!-- Summary Footer Actions -->
+                    <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-2 no-print">
+                        <button onclick="exportToCSV()" class="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-skoda-emerald text-white hover:bg-skoda-dark transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            Download Excel (.CSV) Requisition
+                        </button>
+                        <button onclick="copySummaryToClipboard()" class="w-full py-2 px-4 rounded-xl text-xs font-semibold bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 transition flex items-center justify-center gap-2 cursor-pointer">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            Copy Parts List to Clipboard
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+        </div>
+    </main>
+
+    <script>
+        // =========================================================================
+        // 1. ŠKODA OCTAVIA A8 (MK4) COMPREHENSIVE PARTS DATABASE
+        // =========================================================================
+        const OCTAVIA_CATEGORIES = [
+            {
+                id: 'front',
+                number: '1',
+                title: 'Front End & Bumper',
+                icon: 'shield',
+                parts: [
+                    { id: 'f_bumper_cover', name: 'Front Bumper Cover (Primed)', defaultAction: 'Replace', oemHint: '5E3 807 221' },
+                    { id: 'f_upper_grille', name: 'Upper Radiator Grille (Chrome / Black Trim)', defaultAction: 'Replace', oemHint: '5E3 853 653' },
+                    { id: 'f_skoda_emblem', name: 'Front Hood Škoda Emblem', defaultAction: 'Replace', oemHint: '3V0 853 621 A' },
+                    { id: 'f_lower_grille', name: 'Lower Center Bumper Grille', defaultAction: 'Replace', oemHint: '5E3 853 677' },
+                    { id: 'f_fog_bezel_l', name: 'Front Fog Light Bezel / Air Curtain — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 807 681' },
+                    { id: 'f_fog_bezel_r', name: 'Front Fog Light Bezel / Air Curtain — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 807 682' },
+                    { id: 'f_spoiler_lip', name: 'Front Lower Spoiler / Lip', defaultAction: 'Replace', oemHint: '5E3 805 903' },
+                    { id: 'f_impact_bar', name: 'Front Impact Bar / Crash Reinforcement Beam', defaultAction: 'Replace', oemHint: '5E3 807 109' },
+                    { id: 'f_crash_cans', name: 'Front Crash Cans / Absorbers (Set L/R)', defaultAction: 'Replace', oemHint: '5E3 807 133/134' },
+                    { id: 'f_rad_support', name: 'Radiator Support / Front Lock Carrier', defaultAction: 'Replace', oemHint: '5E3 805 588' },
+                    { id: 'f_hood', name: 'Hood / Bonnet Panel', defaultAction: 'Replace', oemHint: '5E3 823 031' },
+                    { id: 'f_hood_hinge_l', name: 'Hood Hinge — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 823 301' },
+                    { id: 'f_hood_hinge_r', name: 'Hood Hinge — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 823 302' },
+                    { id: 'f_hood_latch', name: 'Hood Latch / Lock Mechanism & Cable', defaultAction: 'Replace', oemHint: '5E3 823 509' },
+                    { id: 'f_hood_strut', name: 'Hood Gas Strut / Support Prop', defaultAction: 'Replace', oemHint: '5E3 823 359' },
+                    { id: 'f_fender_l', name: 'Front Fender Panel — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 821 105' },
+                    { id: 'f_fender_r', name: 'Front Fender Panel — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 821 106' },
+                    { id: 'f_liner_l', name: 'Front Fender Liner / Wheel Arch Splash Guard — Left', defaultAction: 'Replace', oemHint: '5E3 809 957' },
+                    { id: 'f_liner_r', name: 'Front Fender Liner / Wheel Arch Splash Guard — Right', defaultAction: 'Replace', oemHint: '5E3 809 958' },
+                    { id: 'f_under_shield', name: 'Engine Underbody Splash Shield / Belly Pan', defaultAction: 'Replace', oemHint: '5Q0 825 236' }
+                ]
+            },
+            {
+                id: 'lighting',
+                number: '2',
+                title: 'Lighting & ADAS Sensors',
+                icon: 'lightbulb',
+                parts: [
+                    { id: 'l_headlight_l', name: 'LED / Matrix Headlight Assembly — Left (LH)', defaultAction: 'Replace', oemHint: '5E4 941 015' },
+                    { id: 'l_headlight_r', name: 'LED / Matrix Headlight Assembly — Right (RH)', defaultAction: 'Replace', oemHint: '5E4 941 016' },
+                    { id: 'l_headlight_mod_l', name: 'Headlight LED Control Module / Ballast — Left', defaultAction: 'Replace', oemHint: '992 941 597' },
+                    { id: 'l_headlight_mod_r', name: 'Headlight LED Control Module / Ballast — Right', defaultAction: 'Replace', oemHint: '992 941 597' },
+                    { id: 'l_fog_l', name: 'LED Front Fog Light — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 941 699' },
+                    { id: 'l_fog_r', name: 'LED Front Fog Light — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 941 700' },
+                    { id: 'l_front_radar', name: 'Front ACC / Front Assist Radar Sensor & Bracket', defaultAction: 'Replace', oemHint: '5Q0 907 561' },
+                    { id: 'l_front_pdc', name: 'Front Parking Aid Sensors (PDC) & Wiring Harness', defaultAction: 'Replace', oemHint: '5Q0 919 275' },
+                    { id: 'l_windshield_cam', name: 'Windshield Lane Assist / ADAS Multifunction Camera', defaultAction: 'R&I', oemHint: '2Q0 980 653' },
+                    { id: 'l_taillight_out_l', name: 'Rear LED Taillight (Outer Quarter) — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 945 207' },
+                    { id: 'l_taillight_out_r', name: 'Rear LED Taillight (Outer Quarter) — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 945 208' },
+                    { id: 'l_taillight_in_l', name: 'Rear LED Taillight (Inner Trunk Lid) — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 945 307' },
+                    { id: 'l_taillight_in_r', name: 'Rear LED Taillight (Inner Trunk Lid) — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 945 308' },
+                    { id: 'l_rear_pdc', name: 'Rear Parking Aid Sensors (PDC)', defaultAction: 'Replace', oemHint: '5Q0 919 275' },
+                    { id: 'l_rear_cam', name: 'Rearview Reversing Camera (Trunk Handle Integrated)', defaultAction: 'Replace', oemHint: '5E3 827 566' },
+                    { id: 'l_mirror_sig_l', name: 'Side Mirror LED Turn Signal Indicator — Left', defaultAction: 'Replace', oemHint: '5E3 949 101' },
+                    { id: 'l_mirror_sig_r', name: 'Side Mirror LED Turn Signal Indicator — Right', defaultAction: 'Replace', oemHint: '5E3 949 102' }
+                ]
+            },
+            {
+                id: 'engine',
+                number: '3',
+                title: 'Engine Bay & Cooling',
+                icon: 'cpu',
+                parts: [
+                    { id: 'e_radiator', name: 'Main Engine Coolant Radiator', defaultAction: 'Replace', oemHint: '5Q0 121 251' },
+                    { id: 'e_ac_condenser', name: 'A/C Condenser with Receiver Drier', defaultAction: 'Replace', oemHint: '5Q0 816 411' },
+                    { id: 'e_intercooler', name: 'Charge Air Intercooler (TSI / TDI)', defaultAction: 'Replace', oemHint: '5Q0 145 803' },
+                    { id: 'e_cooling_fan', name: 'Radiator Cooling Fan Shroud & Dual Fan Assembly', defaultAction: 'Replace', oemHint: '5Q0 121 205' },
+                    { id: 'e_rad_hoses', name: 'Upper & Lower Radiator Coolant Hoses', defaultAction: 'Replace', oemHint: '5Q0 122 101' },
+                    { id: 'e_expansion_tank', name: 'Coolant Expansion Reservoir Tank & Cap', defaultAction: 'Replace', oemHint: '5Q0 121 407' },
+                    { id: 'e_washer_tank', name: 'Windshield Washer Fluid Reservoir & Pump', defaultAction: 'Replace', oemHint: '5E3 955 453' },
+                    { id: 'e_air_box', name: 'Air Filter Housing Box & Fresh Air Snorkel Duct', defaultAction: 'Replace', oemHint: '5Q0 129 607' },
+                    { id: 'e_intake_pipes', name: 'Turbo Charge Air Intake Pipes & Silicone Hoses', defaultAction: 'Replace', oemHint: '5Q0 129 654' },
+                    { id: 'e_battery', name: '12V 70Ah AGM Start-Stop Battery', defaultAction: 'Replace', oemHint: '000 915 105 FC' },
+                    { id: 'e_battery_tray', name: 'Battery Tray & Thermal Insulation Jacket', defaultAction: 'Replace', oemHint: '5Q0 915 333' },
+                    { id: 'e_fuse_box', name: 'Engine Bay E-Box / Fuse Box Housing & Cover', defaultAction: 'Replace', oemHint: '5Q0 937 132' },
+                    { id: 'e_engine_cover', name: 'Top Acoustic Engine Cover (TSI / TDI)', defaultAction: 'Replace', oemHint: '06Q 103 925' },
+                    { id: 'e_engine_mounts', name: 'Engine & Gearbox Hydraulic Mounts (Set)', defaultAction: 'Replace', oemHint: '5Q0 199 262' },
+                    { id: 'e_belt_tensioner', name: 'Serpentine Drive Belt & Tensioner Pulley', defaultAction: 'Replace', oemHint: '06L 903 137' }
+                ]
+            },
+            {
+                id: 'body',
+                number: '4',
+                title: 'Body Panels, Doors & Glass',
+                icon: 'car-front',
+                parts: [
+                    { id: 'b_door_fl', name: 'Front Door Shell — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 831 051' },
+                    { id: 'b_door_fr', name: 'Front Door Shell — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 831 052' },
+                    { id: 'b_door_rl', name: 'Rear Door Shell — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 833 051' },
+                    { id: 'b_door_rr', name: 'Rear Door Shell — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 833 052' },
+                    { id: 'b_door_hinges', name: 'Door Hinges & Door Check Straps', defaultAction: 'Replace', oemHint: '5E0 831 401' },
+                    { id: 'b_door_handles', name: 'Outer Door Handles (KESSY Keyless) & Caps', defaultAction: 'Paint', oemHint: '5E3 837 205' },
+                    { id: 'b_rocker_l', name: 'Rocker Panel / Side Sill Molding — Left (LH)', defaultAction: 'Repair', oemHint: '5E3 853 859' },
+                    { id: 'b_rocker_r', name: 'Rocker Panel / Side Sill Molding — Right (RH)', defaultAction: 'Repair', oemHint: '5E3 853 860' },
+                    { id: 'b_quarter_l', name: 'Rear Quarter Panel — Left (LH)', defaultAction: 'Repair', oemHint: '5E3 809 605' },
+                    { id: 'b_quarter_r', name: 'Rear Quarter Panel — Right (RH)', defaultAction: 'Repair', oemHint: '5E3 809 606' },
+                    { id: 'b_roof_panel', name: 'Roof Skin Panel (Standard / Panoramic)', defaultAction: 'Repair', oemHint: '5E3 817 111' },
+                    { id: 'b_windshield', name: 'Front Acoustic Windshield Glass (Rain/Camera)', defaultAction: 'Replace', oemHint: '5E3 845 011' },
+                    { id: 'b_rear_glass', name: 'Rear Liftback Heated Windshield Glass', defaultAction: 'Replace', oemHint: '5E3 845 051' },
+                    { id: 'b_glass_fl', name: 'Front Door Window Glass — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 845 201' },
+                    { id: 'b_glass_fr', name: 'Front Door Window Glass — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 845 202' },
+                    { id: 'b_glass_rl', name: 'Rear Door Window Glass — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 845 205' },
+                    { id: 'b_glass_rr', name: 'Rear Door Window Glass — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 845 206' },
+                    { id: 'b_mirror_l', name: 'Complete Side Mirror Assembly (Power/Fold) — Left', defaultAction: 'Replace', oemHint: '5E4 857 507' },
+                    { id: 'b_mirror_r', name: 'Complete Side Mirror Assembly (Power/Fold) — Right', defaultAction: 'Replace', oemHint: '5E4 857 508' },
+                    { id: 'b_mirror_caps', name: 'Side Mirror Painted Upper Caps (L/R)', defaultAction: 'Paint', oemHint: '5E3 857 537/538' }
+                ]
+            },
+            {
+                id: 'rear',
+                number: '5',
+                title: 'Rear End & Trunk',
+                icon: 'package',
+                parts: [
+                    { id: 'r_bumper_cover', name: 'Rear Bumper Cover (Primed)', defaultAction: 'Replace', oemHint: '5E3 807 421' },
+                    { id: 'r_diffuser', name: 'Rear Lower Bumper Diffuser / Valance Trim', defaultAction: 'Replace', oemHint: '5E3 807 521' },
+                    { id: 'r_impact_bar', name: 'Rear Impact Reinforcement Bar', defaultAction: 'Replace', oemHint: '5E3 807 309' },
+                    { id: 'r_bumper_guides', name: 'Rear Bumper Side Mounting Brackets / Guides (L/R)', defaultAction: 'Replace', oemHint: '5E3 807 393/394' },
+                    { id: 'r_tailgate', name: 'Rear Tailgate / Liftback Trunk Lid', defaultAction: 'Replace', oemHint: '5E3 827 025' },
+                    { id: 'r_tailgate_struts', name: 'Tailgate Gas Struts / Power Liftgate Spindles (L/R)', defaultAction: 'Replace', oemHint: '5E3 827 851' },
+                    { id: 'r_tailgate_latch', name: 'Tailgate Lock Latch & Striker Plate', defaultAction: 'Replace', oemHint: '5E3 827 505' },
+                    { id: 'r_rear_emblems', name: 'Rear ŠKODA & OCTAVIA Tailgate Lettering Emblems', defaultAction: 'Replace', oemHint: '5E3 853 687' },
+                    { id: 'r_reflector_l', name: 'Rear Bumper Red Reflector — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 945 105' },
+                    { id: 'r_reflector_r', name: 'Rear Bumper Red Reflector — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 945 106' },
+                    { id: 'r_trunk_trim', name: 'Rear Trunk Sill Trim & Luggage Floor Mat', defaultAction: 'Replace', oemHint: '5E3 863 459' }
+                ]
+            },
+            {
+                id: 'suspension',
+                number: '6',
+                title: 'Suspension, Steering & Brakes',
+                icon: 'disc',
+                parts: [
+                    { id: 's_strut_fl', name: 'Front Shock Absorber / Strut — Left (LH)', defaultAction: 'Replace', oemHint: '5Q0 413 031' },
+                    { id: 's_strut_fr', name: 'Front Shock Absorber / Strut — Right (RH)', defaultAction: 'Replace', oemHint: '5Q0 413 031' },
+                    { id: 's_coil_springs', name: 'Front Coil Springs & Top Strut Mount Bearings', defaultAction: 'Replace', oemHint: '5Q0 411 105' },
+                    { id: 's_control_arm_l', name: 'Front Lower Control Arm / Wishbone — Left (LH)', defaultAction: 'Replace', oemHint: '5Q0 407 151' },
+                    { id: 's_control_arm_r', name: 'Front Lower Control Arm / Wishbone — Right (RH)', defaultAction: 'Replace', oemHint: '5Q0 407 152' },
+                    { id: 's_knuckle_l', name: 'Front Steering Knuckle / Wheel Carrier — Left', defaultAction: 'Replace', oemHint: '5Q0 407 253' },
+                    { id: 's_knuckle_r', name: 'Front Steering Knuckle / Wheel Carrier — Right', defaultAction: 'Replace', oemHint: '5Q0 407 254' },
+                    { id: 's_tie_rods', name: 'Inner & Outer Tie Rod Ends (L/R)', defaultAction: 'Replace', oemHint: '5Q0 423 811/812' },
+                    { id: 's_steering_rack', name: 'Electric Power Steering Rack & Pinion Assembly', defaultAction: 'Replace', oemHint: '5Q1 423 055' },
+                    { id: 's_subframe', name: 'Front Axle Subframe / Crossmember', defaultAction: 'Replace', oemHint: '5Q0 199 369' },
+                    { id: 's_driveshaft_l', name: 'Front CV Axle / Driveshaft — Left (LH)', defaultAction: 'Replace', oemHint: '5Q0 407 271' },
+                    { id: 's_driveshaft_r', name: 'Front CV Axle / Driveshaft — Right (RH)', defaultAction: 'Replace', oemHint: '5Q0 407 272' },
+                    { id: 's_wheel_hubs', name: 'Front / Rear Wheel Hub & Bearing Assemblies', defaultAction: 'Replace', oemHint: '5Q0 407 621' },
+                    { id: 's_rear_shocks', name: 'Rear Shock Absorbers (L/R)', defaultAction: 'Replace', oemHint: '5Q0 513 029' },
+                    { id: 's_rear_axle', name: 'Rear Torsion Beam / Multi-Link Suspension Arms', defaultAction: 'Replace', oemHint: '5Q0 501 053' },
+                    { id: 's_front_brakes', name: 'Front Brake Discs & Ceramic/OEM Pad Set', defaultAction: 'Replace', oemHint: '5Q0 615 301' },
+                    { id: 's_rear_brakes', name: 'Rear Brake Discs & Pad Set', defaultAction: 'Replace', oemHint: '5Q0 615 601' },
+                    { id: 's_alloy_wheels', name: 'Škoda 17" / 18" Alloy Wheel Rim(s)', defaultAction: 'Replace', oemHint: '5E3 601 025' }
+                ]
+            },
+            {
+                id: 'exhaust',
+                number: '7',
+                title: 'Exhaust & Undercarriage',
+                icon: 'flame',
+                parts: [
+                    { id: 'x_cat_gpf', name: 'Catalytic Converter / Gasoline Particulate Filter (GPF)', defaultAction: 'Replace', oemHint: '5Q0 254 502' },
+                    { id: 'x_center_muffler', name: 'Center Exhaust Resonator / Muffler Pipe', defaultAction: 'Replace', oemHint: '5Q0 253 209' },
+                    { id: 'x_rear_silencer', name: 'Rear Exhaust Silencer / Muffler Assembly', defaultAction: 'Replace', oemHint: '5E3 253 609' },
+                    { id: 'x_hangers', name: 'Exhaust Rubber Hangers & Clamps', defaultAction: 'Replace', oemHint: '5Q0 253 144' },
+                    { id: 'x_heat_shields', name: 'Underbody Aluminum Exhaust Heat Shields', defaultAction: 'Replace', oemHint: '5Q0 825 701' },
+                    { id: 'x_fuel_tank', name: 'Fuel Tank Assembly & Fuel Pump Module', defaultAction: 'Replace', oemHint: '5Q0 201 060' },
+                    { id: 'x_under_panels', name: 'Underbody Aerodynamic Floor Panels (L/R)', defaultAction: 'Replace', oemHint: '5Q0 825 201/202' },
+                    { id: 'x_brake_fuel_lines', name: 'Underbody Brake & Fuel Line Bundle', defaultAction: 'Replace', oemHint: '5Q0 614 723' }
+                ]
+            },
+            {
+                id: 'interior',
+                number: '8',
+                title: 'Interior & Safety (Airbags)',
+                icon: 'armchair',
+                parts: [
+                    { id: 'i_dashboard', name: 'Instrument Dashboard Upper Pad Assembly', defaultAction: 'Replace', oemHint: '5E3 857 001' },
+                    { id: 'i_driver_airbag', name: 'Driver Steering Wheel Airbag Module', defaultAction: 'Replace', oemHint: '5E3 880 201' },
+                    { id: 'i_pass_airbag', name: 'Front Passenger Dashboard Airbag Module', defaultAction: 'Replace', oemHint: '5E3 880 204' },
+                    { id: 'i_knee_airbag', name: 'Driver Knee Airbag Module', defaultAction: 'Replace', oemHint: '5Q0 880 841' },
+                    { id: 'i_curtain_l', name: 'Roof Curtain Side Airbag — Left (LH)', defaultAction: 'Replace', oemHint: '5E3 880 741' },
+                    { id: 'i_curtain_r', name: 'Roof Curtain Side Airbag — Right (RH)', defaultAction: 'Replace', oemHint: '5E3 880 742' },
+                    { id: 'i_seat_airbags', name: 'Front Seat Side Thorax Airbags (L/R)', defaultAction: 'Replace', oemHint: '5E3 880 241/242' },
+                    { id: 'i_airbag_ecu', name: 'Airbag Control Unit (SRS ECU) & Crash Sensors', defaultAction: 'Replace', oemHint: '5Q0 959 655' },
+                    { id: 'i_seatbelts_f', name: 'Front Seatbelts with Pyrotechnic Pretensioners (L/R)', defaultAction: 'Replace', oemHint: '5E3 857 705/706' },
+                    { id: 'i_seatbelts_r', name: 'Rear Seatbelt Assemblies', defaultAction: 'Replace', oemHint: '5E3 857 805' },
+                    { id: 'i_clockspring', name: 'Steering Column Clock Spring / Slip Ring', defaultAction: 'Replace', oemHint: '5Q1 953 569' },
+                    { id: 'i_headliner', name: 'Interior Roof Headliner Trim', defaultAction: 'Replace', oemHint: '5E3 867 501' },
+                    { id: 'i_door_trims', name: 'Interior Door Trim Panels & Switches', defaultAction: 'Replace', oemHint: '5E3 867 011' },
+                    { id: 'i_center_console', name: 'Center Console & Shift-by-Wire Selector Trim', defaultAction: 'Replace', oemHint: '5E3 863 241' }
+                ]
+            }
+        ];
+
+        // =========================================================================
+        // 2. APPLICATION STATE & STORAGE
+        // =========================================================================
+        const STORAGE_KEY = 'skoda_octavia_a8_wip_v1';
+
+        let appState = {
+            meta: {
+                wip: '',
+                vin: '',
+                plate: '',
+                advisor: '',
+                date: new Date().toISOString().split('T')[0]
+            },
+            activeCategory: 'all',
+            searchQuery: '',
+            selectedParts: {} // { partId: { action: 'Replace', qty: 1, notes: '' } }
+        };
+
+        // Initialize app on load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            populateMetaInputs();
+            renderCategoryTabs();
+            renderPartsList();
+            updateSummaryAndVisuals();
+            lucide.createIcons();
+        });
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    appState.meta = { ...appState.meta, ...(parsed.meta || {}) };
+                    appState.selectedParts = parsed.selectedParts || {};
+                }
+            } catch (e) {
+                console.warn('Could not load saved WIP state:', e);
+            }
+        }
+
+        function saveState() {
+            appState.meta.wip = document.getElementById('meta-wip').value.trim();
+            appState.meta.vin = document.getElementById('meta-vin').value.trim();
+            appState.meta.plate = document.getElementById('meta-plate').value.trim();
+            appState.meta.advisor = document.getElementById('meta-advisor').value.trim();
+            appState.meta.date = document.getElementById('meta-date').value;
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    meta: appState.meta,
+                    selectedParts: appState.selectedParts
+                }));
+            } catch (e) {
+                console.warn('Could not auto-save WIP state:', e);
+            }
+            syncPrintHeader();
+        }
+
+        function populateMetaInputs() {
+            document.getElementById('meta-wip').value = appState.meta.wip || '';
+            document.getElementById('meta-vin').value = appState.meta.vin || '';
+            document.getElementById('meta-plate').value = appState.meta.plate || '';
+            document.getElementById('meta-advisor').value = appState.meta.advisor || '';
+            document.getElementById('meta-date').value = appState.meta.date || new Date().toISOString().split('T')[0];
+            syncPrintHeader();
+        }
+
+        function syncPrintHeader() {
+            document.getElementById('print-wip').textContent = appState.meta.wip || 'N/A';
+            document.getElementById('print-vin').textContent = appState.meta.vin || 'N/A';
+            document.getElementById('print-plate').textContent = appState.meta.plate || 'N/A';
+            document.getElementById('print-advisor').textContent = appState.meta.advisor || 'N/A';
+            document.getElementById('print-date').textContent = appState.meta.date || 'N/A';
+            document.getElementById('print-timestamp').textContent = new Date().toLocaleString();
+        }
+
+        // =========================================================================
+        // 3. CATEGORY FILTERING & SEARCH
+        // =========================================================================
+        function selectCategory(catId) {
+            appState.activeCategory = catId;
+            renderCategoryTabs();
+            renderPartsList();
+            highlightSvgZones();
+        }
+
+        function handleSearch(val) {
+            appState.searchQuery = val.toLowerCase().trim();
+            const clearBtn = document.getElementById('clear-search-btn');
+            if (appState.searchQuery.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderPartsList();
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('search-input');
+            input.value = '';
+            handleSearch('');
+            input.focus();
+        }
+
+        function renderCategoryTabs() {
+            const container = document.getElementById('category-tabs');
+            let html = `
+                <button onclick="selectCategory('all')"
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                        appState.activeCategory === 'all'
+                            ? 'bg-skoda-electric text-skoda-dark shadow-sm'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }">
+                    All Sections (${getTotalSelectedCount()})
+                </button>
+            `;
+
+            OCTAVIA_CATEGORIES.forEach(cat => {
+                const count = getCategorySelectedCount(cat.id);
+                const isActive = appState.activeCategory === cat.id;
+                html += `
+                    <button onclick="selectCategory('${cat.id}')"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer ${
+                            isActive
+                                ? 'bg-skoda-electric text-skoda-dark shadow-sm'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        }">
+                        <span>${cat.number}. ${cat.title.split('&')[0].trim()}</span>
+                        ${count > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${isActive ? 'bg-skoda-dark text-skoda-electric' : 'bg-amber-500 text-slate-950'}">${count}</span>` : ''}
+                    </button>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // =========================================================================
+        // 4. PARTS CHECKLIST RENDERING & INTERACTIONS
+        // =========================================================================
+        function renderPartsList() {
+            const container = document.getElementById('parts-container');
+            const selectedOnly = document.getElementById('toggle-selected-only').checked;
+            let html = '';
+            let totalVisibleParts = 0;
+
+            OCTAVIA_CATEGORIES.forEach(cat => {
+                if (appState.activeCategory !== 'all' && appState.activeCategory !== cat.id) {
+                    return;
+                }
+
+                // Filter parts inside this category
+                const filteredParts = cat.parts.filter(part => {
+                    const isSelected = Boolean(appState.selectedParts[part.id]);
+                    if (selectedOnly && !isSelected) return false;
+                    if (appState.searchQuery) {
+                        const matchName = part.name.toLowerCase().includes(appState.searchQuery);
+                        const matchOem = part.oemHint.toLowerCase().includes(appState.searchQuery);
+                        const matchCat = cat.title.toLowerCase().includes(appState.searchQuery);
+                        return matchName || matchOem || matchCat;
+                    }
+                    return true;
+                });
+
+                if (filteredParts.length === 0) return;
+                totalVisibleParts += filteredParts.length;
+
+                const catSelectedCount = getCategorySelectedCount(cat.id);
+
+                html += `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden">
+                        <!-- Category Header -->
+                        <div class="bg-slate-50 px-4 sm:px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-lg bg-skoda-dark text-skoda-electric font-bold text-xs flex items-center justify-center">
+                                    ${cat.number}
+                                </span>
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base">${cat.title}</h3>
+                            </div>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${catSelectedCount > 0 ? 'bg-emerald-100 text-skoda-emerald' : 'bg-slate-200/70 text-slate-500'}">
+                                ${catSelectedCount} / ${cat.parts.length} Selected
+                            </span>
+                        </div>
+
+                        <!-- Parts Rows -->
+                        <div class="divide-y divide-slate-100">
+                            ${filteredParts.map(part => renderPartRow(part)).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (totalVisibleParts === 0) {
+                html = `
+                    <div class="bg-white rounded-2xl p-10 text-center border border-slate-200 shadow-sm">
+                        <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                        <h3 class="text-base font-bold text-slate-700">No matching Octavia A8 parts found</h3>
+                        <p class="text-xs text-slate-500 mt-1">Try clearing your search filter or disabling "Selected Only".</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function renderPartRow(part) {
+            const sel = appState.selectedParts[part.id];
+            const isChecked = Boolean(sel);
+            const action = sel ? sel.action : part.defaultAction;
+            const qty = sel ? sel.qty : 1;
+            const notes = sel ? sel.notes : '';
+
+            return `
+                <div class="p-3.5 sm:px-5 transition-colors ${isChecked ? 'bg-emerald-50/60' : 'hover:bg-slate-50/80'}">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <!-- Left: Checkbox + Part Name + OEM Hint -->
+                        <label class="flex items-start gap-3 cursor-pointer flex-1 select-none">
+                            <input type="checkbox" ${isChecked ? 'checked' : ''}
+                                onchange="togglePart('${part.id}', '${part.defaultAction}')"
+                                class="mt-0.5 w-5 h-5 rounded-md border-slate-300 text-skoda-emerald focus:ring-skoda-emerald cursor-pointer">
+                            <div>
+                                <span class="text-sm font-semibold ${isChecked ? 'text-skoda-dark' : 'text-slate-800'} block leading-snug">
+                                    ${part.name}
+                                </span>
+                                <span class="text-[11px] font-mono text-slate-400">Ref: ${part.oemHint}</span>
+                            </div>
+                        </label>
+
+                        <!-- Right: Controls (Action Tag, Qty, Part No / Notes) -->
+                        <div class="flex flex-wrap items-center gap-2 pl-8 md:pl-0">
+                            <!-- Action Selector -->
+                            <select onchange="updatePartField('${part.id}', 'action', this.value, '${part.defaultAction}')"
+                                class="text-xs font-bold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-skoda-emerald cursor-pointer ${getActionBadgeStyle(action)}">
+                                <option value="Replace" ${action === 'Replace' ? 'selected' : ''}>Replace</option>
+                                <option value="Repair" ${action === 'Repair' ? 'selected' : ''}>Repair</option>
+                                <option value="Paint" ${action === 'Paint' ? 'selected' : ''}>Paint</option>
+                                <option value="R&I" ${action === 'R&I' ? 'selected' : ''}>R&I (Remove/Install)</option>
+                            </select>
+
+                            <!-- Quantity Input -->
+                            <div class="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+                                <span class="text-[10px] font-bold text-slate-400 px-2 bg-slate-50 border-r border-slate-200 py-1.5">QTY</span>
+                                <input type="number" min="1" max="20" value="${qty}"
+                                    onchange="updatePartField('${part.id}', 'qty', Math.max(1, parseInt(this.value) || 1), '${part.defaultAction}')"
+                                    class="w-12 text-center text-xs font-bold text-slate-800 py-1.5 focus:outline-none">
+                            </div>
+
+                            <!-- Optional Part No / Damage Notes -->
+                            <input type="text" value="${escapeHtml(notes)}" placeholder="Part # / Note..."
+                                oninput="updatePartField('${part.id}', 'notes', this.value, '${part.defaultAction}')"
+                                class="w-36 sm:w-44 text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-skoda-emerald text-slate-700 placeholder:text-slate-400">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getActionBadgeStyle(action) {
+            switch (action) {
+                case 'Replace': return 'bg-red-50 text-red-700 border-red-200';
+                case 'Repair':  return 'bg-amber-50 text-amber-700 border-amber-200';
+                case 'Paint':   return 'bg-blue-50 text-blue-700 border-blue-200';
+                case 'R&I':     return 'bg-slate-100 text-slate-700 border-slate-300';
+                default:        return 'bg-white text-slate-700 border-slate-200';
+            }
+        }
+
+        // Toggle part selection
+        function togglePart(partId, defaultAction) {
+            if (appState.selectedParts[partId]) {
+                delete appState.selectedParts[partId];
+            } else {
+                appState.selectedParts[partId] = {
+                    action: defaultAction,
+                    qty: 1,
+                    notes: ''
+                };
+            }
+            saveState();
+            renderCategoryTabs();
+            renderPartsList();
+            updateSummaryAndVisuals();
+        }
+
+        // Automatically selects the part if user edits Action, Qty, or Notes directly
+        function updatePartField(partId, field, value, defaultAction) {
+            if (!appState.selectedParts[partId]) {
+                appState.selectedParts[partId] = {
+                    action: defaultAction,
+                    qty: 1,
+                    notes: ''
+                };
+                // Re-render parts list so the checkbox updates visually
+                appState.selectedParts[partId][field] = value;
+                saveState();
+                renderCategoryTabs();
+                renderPartsList();
+                updateSummaryAndVisuals();
+                return;
+            }
+
+            appState.selectedParts[partId][field] = value;
+            saveState();
+            if (field === 'action') {
+                renderPartsList();
+            }
+            updateSummaryAndVisuals();
+        }
+
+        // =========================================================================
+        // 5. LIVE SUMMARY PANEL & SVG ZONE HIGHLIGHTS
+        // =========================================================================
+        function updateSummaryAndVisuals() {
+            const selectedEntries = getDetailedSelectedParts();
+            const totalCount = selectedEntries.length;
+
+            // Update Total Badge
+            document.getElementById('summary-total-badge').textContent = `${totalCount} ${totalCount === 1 ? 'Item' : 'Items'}`;
+
+            // Action Breakdown
+            let replaceCount = 0, repairCount = 0, paintCount = 0, riCount = 0;
+            selectedEntries.forEach(item => {
+                if (item.action === 'Replace') replaceCount++;
+                else if (item.action === 'Repair') repairCount++;
+                else if (item.action === 'Paint') paintCount++;
+                else if (item.action === 'R&I') riCount++;
+            });
+
+            document.getElementById('count-replace').textContent = replaceCount;
+            document.getElementById('count-repair').textContent = repairCount;
+            document.getElementById('count-paint').textContent = paintCount;
+            document.getElementById('count-ri').textContent = riCount;
+
+            // Render Selected List in Right Panel
+            const listContainer = document.getElementById('selected-summary-list');
+            if (totalCount === 0) {
+                listContainer.innerHTML = `
+                    <div class="py-10 text-center text-slate-400">
+                        <i data-lucide="wrench" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+                        <p class="text-sm font-medium text-slate-500">No parts selected yet</p>
+                        <p class="text-xs mt-1">Check items on the left or click a car zone to begin estimating.</p>
+                    </div>
+                `;
+            } else {
+                listContainer.innerHTML = selectedEntries.map((item, idx) => `
+                    <div class="py-2.5 flex items-start justify-between gap-2.5 group">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border ${getActionBadgeStyle(item.action)}">
+                                    ${item.action}
+                                </span>
+                                <span class="text-xs font-bold text-slate-700">×${item.qty}</span>
+                                <span class="text-[10px] text-slate-400 truncate">${item.categoryTitle}</span>
+                            </div>
+                            <p class="text-xs font-semibold text-slate-900 mt-1 leading-snug">${item.partName}</p>
+                            ${item.notes ? `<p class="text-[11px] text-skoda-emerald font-medium mt-0.5">Note: ${escapeHtml(item.notes)}</p>` : ''}
+                        </div>
+                        <button onclick="togglePart('${item.partId}', '${item.defaultAction}')" title="Remove item"
+                            class="text-slate-300 hover:text-red-600 p-1 rounded-lg transition no-print cursor-pointer">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            highlightSvgZones();
+            lucide.createIcons();
+        }
+
+        function highlightSvgZones() {
+            OCTAVIA_CATEGORIES.forEach(cat => {
+                const zoneEl = document.getElementById(`zone-${cat.id}`);
+                if (!zoneEl) return;
+
+                zoneEl.classList.remove('active-zone', 'has-selected');
+                if (appState.activeCategory === cat.id) {
+                    zoneEl.classList.add('active-zone');
+                } else if (getCategorySelectedCount(cat.id) > 0) {
+                    zoneEl.classList.add('has-selected');
+                }
+            });
+        }
+
+        function getCategorySelectedCount(catId) {
+            const cat = OCTAVIA_CATEGORIES.find(c => c.id === catId);
+            if (!cat) return 0;
+            return cat.parts.filter(p => Boolean(appState.selectedParts[p.id])).length;
+        }
+
+        function getTotalSelectedCount() {
+            return Object.keys(appState.selectedParts).length;
+        }
+
+        function getDetailedSelectedParts() {
+            const results = [];
+            OCTAVIA_CATEGORIES.forEach(cat => {
+                cat.parts.forEach(part => {
+                    const sel = appState.selectedParts[part.id];
+                    if (sel) {
+                        results.push({
+                            categoryNumber: cat.number,
+                            categoryTitle: cat.title,
+                            partId: part.id,
+                            partName: part.name,
+                            oemHint: part.oemHint,
+                            defaultAction: part.defaultAction,
+                            action: sel.action,
+                            qty: sel.qty,
+                            notes: sel.notes
+                        });
+                    }
+                });
+            });
+            return results;
+        }
+
+        // =========================================================================
+        // 6. EXPORT TO EXCEL (CSV), CLIPBOARD & CLEAR MODAL
+        // =========================================================================
+        function exportToCSV() {
+            const selected = getDetailedSelectedParts();
+            if (selected.length === 0) {
+                showToast('Please select at least one part before exporting to Excel.', 'warning');
+                return;
+            }
+
+            saveState();
+            const wip = appState.meta.wip || 'UNASSIGNED_WIP';
+            const vin = appState.meta.vin || '';
+            const plate = appState.meta.plate || '';
+            const advisor = appState.meta.advisor || '';
+            const date = appState.meta.date || '';
+
+            const rows = [
+                ['SKODA OCTAVIA A8 (MK4) - WORKSHOP PARTS REQUISITION'],
+                ['WIP / Job Card No.', wip, 'VIN / Chassis No.', vin],
+                ['Plate Number', plate, 'Advisor / Estimator', advisor],
+                ['Assessment Date', date, 'Total Selected Lines', selected.length],
+                [],
+                ['#', 'Category', 'Part Description', 'OEM Reference', 'Action', 'Quantity', 'Part Number / Workshop Notes']
+            ];
+
+            selected.forEach((item, index) => {
+                rows.push([
+                    index + 1,
+                    `${item.categoryNumber}. ${item.categoryTitle}`,
+                    item.partName,
+                    item.oemHint,
+                    item.action,
+                    item.qty,
+                    item.notes || ''
+                ]);
+            });
+
+            // Convert to CSV string with BOM so Excel opens UTF-8 characters (like Š) cleanly
+            const csvContent = '\uFEFF' + rows.map(row =>
+                row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+            ).join('\r\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const safeWipName = wip.replace(/[^a-z0-9_-]/gi, '_');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Octavia_A8_Parts_${safeWipName}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast(`Exported ${selected.length} parts to Octavia_A8_Parts_${safeWipName}.csv`, 'success');
+        }
+
+        function copySummaryToClipboard() {
+            const selected = getDetailedSelectedParts();
+            if (selected.length === 0) {
+                showToast('No parts selected to copy.', 'warning');
+                return;
+            }
+
+            saveState();
+            const header = `ŠKODA OCTAVIA A8 (Mk4) — WIP: ${appState.meta.wip || 'N/A'} | Plate: ${appState.meta.plate || 'N/A'} | VIN: ${appState.meta.vin || 'N/A'}\n------------------------------------------------------------\n`;
+            const lines = selected.map((item, idx) =>
+                `${idx + 1}. [${item.action.toUpperCase()}] ${item.partName} (Qty: ${item.qty})${item.notes ? ` — Note: ${item.notes}` : ''}`
+            ).join('\n');
+
+            const textArea = document.createElement('textarea');
+            textArea.value = header + lines;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Parts requisition copied to clipboard!', 'success');
+            } catch (err) {
+                showToast('Failed to copy text.', 'warning');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function confirmClearAll() {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('modal-title').textContent = 'Reset WIP Checklist?';
+            document.getElementById('modal-message').textContent = 'This will clear all selected parts, quantities, and notes for the current vehicle. Do you want to continue?';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            document.getElementById('modal-cancel').onclick = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            };
+
+            document.getElementById('modal-confirm').onclick = () => {
+                appState.selectedParts = {};
+                saveState();
+                renderCategoryTabs();
+                renderPartsList();
+                updateSummaryAndVisuals();
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                showToast('Checklist cleared for new vehicle.', 'success');
+            };
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-skoda-dark text-white border-skoda-electric/40' : 'bg-amber-600 text-white border-amber-400';
+            toast.className = `px-4 py-3 rounded-xl shadow-lg border text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all duration-300 ${bgClass}`;
+            toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
